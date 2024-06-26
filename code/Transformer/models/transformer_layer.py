@@ -2,6 +2,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+'''
+questions:
+
+1) Why conv1d? Why transpose?
+2) Multiheaded transform gets us what?
+
+'''
+
 
 class FeedForward(nn.Module):
     def __init__(self, d_model, ff_dim, dropout, activation):
@@ -61,9 +69,9 @@ class EncoderLayer(nn.Module):
 
 
 class Encoder(nn.Module):
-    def __init__(self, attn_layers, conv_layers=None, norm_layer=None):
+    def __init__(self, encoder_layers, conv_layers=None, norm_layer=None):
         super(Encoder, self).__init__()
-        self.attn_layers = nn.ModuleList(attn_layers)
+        self.encoder_layers = nn.ModuleList(encoder_layers)
         self.conv_layers = nn.ModuleList(conv_layers) if conv_layers is not None else None
         self.norm = norm_layer
 
@@ -71,15 +79,15 @@ class Encoder(nn.Module):
         # x [B, L, D]
         attns = []
         if self.conv_layers is not None:
-            for attn_layer, conv_layer in zip(self.attn_layers, self.conv_layers):
-                x, attn = attn_layer(x, attn_mask=attn_mask)
+            for encoder_layer, conv_layer in zip(self.encoder_layers, self.conv_layers):
+                x, attn = encoder_layer(x, attn_mask=attn_mask)
                 x = conv_layer(x)
                 attns.append(attn)
-            x, attn = self.attn_layers[-1](x)
+            x, attn = self.encoder_layers[-1](x)
             attns.append(attn)
         else:
-            for attn_layer in self.attn_layers:
-                x, attn = attn_layer(x, attn_mask=attn_mask)
+            for encoder_layer in self.encoder_layers:
+                x, attn = encoder_layer(x, attn_mask=attn_mask)
                 attns.append(attn)
 
         if self.norm is not None:

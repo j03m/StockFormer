@@ -235,54 +235,80 @@ class FeatureEngineer:
         df = df.sort_values(["date", "tic"]).reset_index(drop=True)
         return df
 
+    # Calculate turbulence index based on Dow 30
     def calculate_turbulence(self, data):
-        """calculate turbulence index based on dow 30"""
-        # can add other market assets
+        """Calculate turbulence index based on Dow 30"""
+
+        # Make a copy of the input data
         df = data.copy()
+
+        # Create a pivot table with dates as rows and tickers as columns, values are closing prices
         df_price_pivot = df.pivot(index="date", columns="tic", values="close")
-        # use returns to calculate turbulence
+
+        # Calculate daily returns (percentage change)
         df_price_pivot = df_price_pivot.pct_change()
 
+        # Get unique dates in the dataset
         unique_date = df.date.unique()
-        # start after a year
-        start = 252
-        turbulence_index = [0] * start
-        # turbulence_index = [0]
-        count = 0
-        for i in range(start, len(unique_date)):
-            current_price = df_price_pivot[df_price_pivot.index == unique_date[i]]
-            # use one year rolling window to calcualte covariance
-            hist_price = df_price_pivot[
-                (df_price_pivot.index < unique_date[i])
-                & (df_price_pivot.index >= unique_date[i - 252])
-            ]
-            # Drop tickers which has number missing values more than the "oldest" ticker
-            filtered_hist_price = hist_price.iloc[
-                hist_price.isna().sum().min() :
-            ].dropna(axis=1)
 
+        # Start calculation after the first 252 trading days (one year of data)
+        start = 252
+
+        # Initialize the turbulence index list with zeros for the first 252 days
+        turbulence_index = [0] * start
+
+        # Counter to keep track of non-zero turbulence values
+        count = 0
+
+        # Loop over each date starting from the 252nd day to the end of the unique dates
+        for i in range(start, len(unique_date)):
+
+            # Get the price data for the current date
+            current_price = df_price_pivot[df_price_pivot.index == unique_date[i]]
+
+            # Get the historical price data for the past 252 days (one year)
+            hist_price = df_price_pivot[
+                (df_price_pivot.index < unique_date[i]) &
+                (df_price_pivot.index >= unique_date[i - 252])
+                ]
+
+            # Filter historical data to remove columns (tickers) with too many missing values
+            filtered_hist_price = hist_price.iloc[
+                                  hist_price.isna().sum().min():
+                                  ].dropna(axis=1)
+
+            # Calculate the covariance matrix of the filtered historical prices
             cov_temp = filtered_hist_price.cov()
+
+            # Calculate the deviation of the current price from the historical mean
             current_temp = current_price[[x for x in filtered_hist_price]] - np.mean(
                 filtered_hist_price, axis=0
             )
-            # cov_temp = hist_price.cov()
-            # current_temp=(current_price - np.mean(hist_price,axis=0))
 
+            # Calculate the turbulence value using the Mahalanobis distance
             temp = current_temp.values.dot(np.linalg.pinv(cov_temp)).dot(
                 current_temp.values.T
             )
+
+            # Check if the turbulence value is positive
             if temp > 0:
                 count += 1
+                # Avoid large outliers by initializing with zeros for the first few values
                 if count > 2:
                     turbulence_temp = temp[0][0]
                 else:
-                    # avoid large outlier because of the calculation just begins
                     turbulence_temp = 0
             else:
                 turbulence_temp = 0
+
+            # Append the calculated turbulence value to the list
             turbulence_index.append(turbulence_temp)
 
+        # Create a DataFrame with the dates and corresponding turbulence index values
         turbulence_index = pd.DataFrame(
             {"date": df_price_pivot.index, "turbulence": turbulence_index}
         )
+
+        # Return the DataFrame containing the turbulence index
         return turbulence_index
+

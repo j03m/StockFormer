@@ -12,6 +12,10 @@ import random
 import torch
 import numpy as np
 
+import warnings
+
+warnings.filterwarnings('error', category=FutureWarning)
+
 fix_seed = 2022
 random.seed(fix_seed)
 torch.manual_seed(fix_seed)
@@ -25,7 +29,7 @@ parser.add_argument('--project_name', type=str, default='baseline',help='name of
 parser.add_argument('--data_name', type=str, default='CSI', help='')
 parser.add_argument('--data_type', type=str, default='stock', help='stock')
 parser.add_argument('--root_path', type=str, default='data/', help='root path of the data file')
-parser.add_argument('--full_stock_path', type=str, default='processed_data/CSI/', help='root path of the data file')
+parser.add_argument('--full_stock_path', type=str, default='CSI/', help='root path of the data file')
 
 parser.add_argument('--exp_type', type=str, default='pred', help='[mae|pred]')
 

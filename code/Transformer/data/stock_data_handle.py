@@ -39,8 +39,8 @@ class Stock_Data():
         stock_num = len(self.ticker_list)
 
         full_stock_dir = os.path.join(self.root_path, self.full_stock)
-        
-        df = pd.DataFrame([], columns=['date','open','close','high','low','volume','dopen','dclose','dhigh','dlow','dvolume', 'price', 'tic'])
+
+        df_list = []
         for ticket in self.ticker_list:
             temp_df = pd.read_csv(os.path.join(full_stock_dir,ticket+'.csv'), usecols=['date', 'open', 'close', 'high', 'low', 'volume', 'dopen', 'dclose', 'dhigh', 'dlow', 'dvolume', 'price'])
 
@@ -49,7 +49,9 @@ class Stock_Data():
             temp_df['label_short_term'] = temp_df['close'].pct_change(periods=self.prediction_len[0]).shift(periods=(-1*self.prediction_len[0]))
             temp_df['label_long_term'] = temp_df['close'].pct_change(periods=self.prediction_len[1]).shift(periods=(-1*self.prediction_len[1]))
             temp_df['tic'] = ticket
-            df = pd.concat((df, temp_df))
+            df_list.append(temp_df)
+
+        df = pd.concat(df_list, ignore_index=True)
         df = df.sort_values(by=['date','tic'])
 
         fe = FeatureEngineer(

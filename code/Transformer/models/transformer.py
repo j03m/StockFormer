@@ -68,10 +68,8 @@ class Transformer_base(nn.Module):
 
         enc_out, _ = self.encoder(enc_out, attn_mask=enc_self_mask)
         dec_out = self.decoder(dec_out, enc_out, x_mask=dec_self_mask, cross_mask=dec_enc_mask)
-        
-        
-        output = self.projection_decoder(dec_out)
 
+        output = self.projection_decoder(dec_out)
 
         return enc_out, dec_out, output
 
