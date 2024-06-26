@@ -161,6 +161,7 @@ class FeatureEngineer:
                     )
                 except Exception as e:
                     print(e)
+                    raise e
             df = df.merge(
                 indicator_df[["tic", "date", indicator, indicator+'_'+str(1), indicator+'_'+str(2)]], on=["tic", "date"], how="left"
             )
@@ -197,6 +198,7 @@ class FeatureEngineer:
                     )
                 except Exception as e:
                     print(e)
+                    raise e
             df = df.merge(
                 indicator_df[["tic", "date", indicator]], on=["tic", "date"], how="left"
             )
