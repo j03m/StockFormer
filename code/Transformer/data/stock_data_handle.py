@@ -88,6 +88,8 @@ class Stock_Data():
 
         df['date_str'] = df['date'].apply(lambda x: datetime.datetime.strftime(x,'%Y%m%d'))
 
+        #TODO cov_list is a list in a dataframe? da fu?
+
         dates = df['date_str'].unique().tolist()
         boarder1_ = dates.index(self.border_dates[0])
         boarder1 = dates.index(self.border_dates[1]) 
@@ -109,19 +111,28 @@ class Stock_Data():
         else:
             data = df_data.values
 
+        # TODO you need to understand this more granularly
         cov_list = np.array(df['cov_list'].values.tolist()) # [stock_num*len, stock_num]
         feature_list = np.array(df[self.temporal_feature].values.tolist()) # [stock_num*len, 10]
         close_list = np.array(df['price'].values.tolist())
 
         # pdb.set_trace()
+        # cov_list is a list of matrices where len(cov_list) is the number of days * stocks and each entry is a list is 88 (num_stocks) by 88 covariance matrix
+        # we then reshape this to be days x stocks x stock x stock which is each day, index by each stock and then its relationship to other stocks
+        # the idea that we didn't start with a "days" length list might be inefficient, but I haven't investigated. Later we everything but the 1st matrix for each stock with the call to
+        # data_cov[:, 0, :, :] so - seems wasteful
         data_cov = cov_list.reshape(-1, stock_num, cov_list.shape[1], cov_list.shape[2]) # [day, num_stocks, num_stocks, num_stocks]
+
         data_technical = data.reshape(-1, stock_num, len(self.attr)) # [day, stock_num, technical_len]
+
+        # feature list is stocks * days x feature (10) we reshape that into days, stocks, features
         data_feature = feature_list.reshape(-1, stock_num, len(self.temporal_feature)) # [day, stock_num, temporal_feature_len=10]
         data_close = close_list.reshape(-1, stock_num)
 
         label_short_term = np.array(df['label_short_term'].values.tolist()).reshape(-1, stock_num)
         label_long_term = np.array(df['label_long_term'].values.tolist()).reshape(-1, stock_num)
 
+        # the final result of data_all is days x stocks x (88 covariance, 8 technicals, 10 features)
         self.data_all = np.concatenate((data_cov[:, 0, :, :], data_technical, data_feature), axis=-1) # [days, num_stocks, cov+technical_len+feature_len]
         self.label_all = np.stack((label_short_term, label_long_term), axis=0) # [2, days, num_stocks, 1]
         self.dates = np.array(dates)

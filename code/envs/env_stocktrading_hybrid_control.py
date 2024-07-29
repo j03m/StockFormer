@@ -1,4 +1,3 @@
-from distutils.command import config
 import numpy as np
 import pandas as pd
 from gym.utils import seeding
@@ -505,7 +504,17 @@ class StockTradingEnv(gym.Env):
         model = PredictionModel(enc_in=enc_in, dec_in=dec_in, c_out=c_out)
 
         if path is not None:
-            state_dict = torch.load(path, map_location='cuda:0')
+            if torch.cuda.is_available():
+                map_location = 'cuda:0'  # First CUDA device
+                # Check if Metal Performance Shaders (MPS) is available
+            elif torch.backends.mps.is_available():
+                map_location = 'mps'  # Only one MPS device, no index needed
+                # Default to CPU if no GPU or MPS is available
+            else:
+                map_location = 'cpu'  # CPU device
+
+                # Load the model state dictionary
+            state_dict = torch.load(path, map_location=map_location)
             new_state_dict = OrderedDict()
             for k, v in state_dict.items(): 
                 name = k[7:] 

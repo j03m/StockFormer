@@ -132,6 +132,9 @@ class DRLAgent:
                 mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions)
             )
         print(model_kwargs)
+        # Policy string MlpPolicy is converted to an instance later, internally the member policy is an instance of
+        # MlpPolicy
+        # https://github.com/DLR-RM/stable-baselines3/blob/master/stable_baselines3/common/base_class.py#L122
         model = MODELS[model_name](
             policy=policy,
             env=self.env,
